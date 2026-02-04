@@ -103,40 +103,83 @@
         </div>
     </div>
 
-    <script>
-        const form = document.getElementById('suggestionForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnText = document.getElementById('btnText');
-        const arrowIcon = document.getElementById('arrowIcon');
-        const loadingIcon = document.getElementById('loadingIcon');
+  <script>
+    const form = document.getElementById('suggestionForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const arrowIcon = document.getElementById('arrowIcon');
+    const loadingIcon = document.getElementById('loadingIcon');
+    const nameInput = document.getElementById('name');
 
-        form.addEventListener('submit', function() {
-            submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-80', 'cursor-not-allowed');
-            btnText.innerText = 'İLETİLİYOR...';
-            arrowIcon.classList.add('hidden');
-            loadingIcon.classList.remove('hidden');
-        });
+    // Otomatik Büyük Harf
+    nameInput.addEventListener('input', function() {
+        this.value = this.value.toLocaleUpperCase('tr-TR');
+    });
 
-        @if(session('success'))
+    form.addEventListener('submit', function(e) {
+        const val = nameInput.value.trim();
+
+        // 1. ÖN YÜZ KONTROLÜ: Çok kısa girişler
+        if (val.length < 3) {
+            e.preventDefault();
             Swal.fire({
-                title: 'Teşekkürler!',
-                text: "{{ session('success') }}",
-                icon: 'success',
-                confirmButtonText: 'Tamam',
-                confirmButtonColor: '#03a0db'
-            });
-        @endif
-
-        @if($errors->any())
-            Swal.fire({
-                title: 'Uyarı',
-                text: 'Lütfen girdiğiniz ismi kontrol ediniz.',
+                title: 'Çok Kısa',
+                text: 'Lütfen en az 3 karakterden oluşan bir isim giriniz.',
                 icon: 'warning',
                 confirmButtonColor: '#03a0db',
-                confirmButtonText: 'Tekrar Dene'
+                confirmButtonText: 'Tamam'
             });
-        @endif
-    </script>
+            return;
+        }
+
+        // 2. ÖN YÜZ KONTROLÜ: Tekrarlayan Harfler (AAAAA)
+        const repetitionRegex = /(.)\1{2,}/;
+        if (repetitionRegex.test(val)) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Geçersiz Giriş',
+                text: 'Lütfen "AAAA" gibi tekrarlayan harfler kullanmayınız.',
+                icon: 'warning',
+                confirmButtonColor: '#03a0db',
+                confirmButtonText: 'Düzelt'
+            });
+            return;
+        }
+
+        // Gönderiliyor animasyonu
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-80', 'cursor-not-allowed');
+        btnText.innerText = 'İLETİLİYOR...';
+        arrowIcon.classList.add('hidden');
+        loadingIcon.classList.remove('hidden');
+    });
+
+    // BAŞARILI MESAJI
+    @if(session('success'))
+        Swal.fire({
+            title: 'Teşekkür Ederiz',
+            text: "{{ session('success') }}",
+            icon: 'success',
+            confirmButtonText: 'Tamam',
+            confirmButtonColor: '#03a0db',
+            iconColor: '#03a0db',
+            timer: 5000,
+            timerProgressBar: true
+        });
+    @endif
+
+    // HATA MESAJI (Burayı Düzelttik!)
+    @if($errors->any())
+        Swal.fire({
+            title: 'Uyarı',
+            // ESKİ KOD: text: 'Lütfen girdiğiniz ismi kontrol ediniz.',
+            // YENİ KOD (Aşağıdaki satır): Sunucudan gelen gerçek hatayı yazar.
+            text: "{!! $errors->first() !!}", 
+            icon: 'error',
+            confirmButtonColor: '#03a0db',
+            confirmButtonText: 'Tekrar Dene'
+        });
+    @endif
+</script>
 </body>
 </html>
